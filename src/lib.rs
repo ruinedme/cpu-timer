@@ -47,12 +47,10 @@ pub fn cpu_freq() -> u64 {
     let os_freq = os_freq();
     let cpu_start = read_cpu_timer();
     let os_start = read_os_timer();
-    let mut os_end = 0u64;
     let mut os_elapsed = 0u64;
     let os_wait_time = os_freq * milis_to_wait / 1000;
     while os_elapsed < os_wait_time {
-        os_end = read_os_timer();
-        os_elapsed = os_end - os_start;
+        os_elapsed = read_os_timer() - os_start;
     }
 
     let cpu_end = read_cpu_timer();
