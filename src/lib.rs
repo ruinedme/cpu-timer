@@ -5,7 +5,6 @@ pub struct Timer {
     pub os_freq: u64,
     pub os_timer: u64,
     pub cpu_timer: u64,
-    pub cpu_freq: u64,
 }
 
 impl Timer {
@@ -14,7 +13,6 @@ impl Timer {
             os_freq: os_freq(),
             os_timer: read_os_timer(),
             cpu_timer: read_cpu_timer(),
-            cpu_freq: cpu_freq(),
         }
     }
 }
@@ -41,7 +39,10 @@ pub fn read_cpu_timer() -> u64 {
     }
 }
 
-//Give a close approximation based on the high precision timers above
+/**
+ * Give a close approximation based on the high precision timers above 
+ * Uses a 100ms delay to approximate the cpu frequency
+ */
 pub fn cpu_freq() -> u64 {
     let milis_to_wait = 100;
     let os_freq = os_freq();

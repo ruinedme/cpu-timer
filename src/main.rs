@@ -24,11 +24,8 @@ fn main() {
 
     let cpu_end = cpu_timer::read_cpu_timer();
     let cpu_elapsed = cpu_end - cpu_start;
-    let mut cpu_freq = 0u64;
-    if os_elapsed > 0 {
-        cpu_freq = os_freq * cpu_elapsed / os_elapsed;
-    }
-
+    let cpu_freq = cpu_timer::cpu_freq();
+    
     println!(
         "OS Timer: {} -> {} = {} elapsed",
         os_start, os_end, os_elapsed
