@@ -1,0 +1,9 @@
+...
+; QueryPerformanceFrequency(&mut freq);
+00007FF762AB5240  lea             rcx, ptr [rsp+0x20]   ;0x164e6ff530 -- no value set
+00007FF762AB5245  call            0x7ff762ad5c30
+...
+00007FFDCBC21250  mov             rax, qword ptr [0x7ffe0300] ;0x7ffe0300 -- 10_000_000
+00007FFDCBC21258  mov             qword ptr [rcx], rax ;rcx 0x1d39bef270
+00007FFDCBC2125B  mov             eax, 0x1
+00007FFDCBC21260  ret    
