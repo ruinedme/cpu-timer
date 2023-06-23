@@ -1,9 +1,46 @@
+; QueryPerformanceCounter(&mut os_timer);
+00007FF762AB52C5  call            0x7ff762ad5c36
 ...
-; QueryPerformanceFrequency(&mut freq);
-00007FF762AB5240  lea             rcx, ptr [rsp+0x20]   ;0x164e6ff530 -- no value set
-00007FF762AB5245  call            0x7ff762ad5c30
-...
-00007FFDCBC21250  mov             rax, qword ptr [0x7ffe0300] ;0x7ffe0300 -- 10_000_000
-00007FFDCBC21258  mov             qword ptr [rcx], rax ;rcx 0x1d39bef270
-00007FFDCBC2125B  mov             eax, 0x1
-00007FFDCBC21260  ret    
+00007FFDCBBF01A0  mov             qword ptr [rsp+0x8], rbx
+00007FFDCBBF01A5  push            rdi
+00007FFDCBBF01A6  sub             rsp, 0x20
+00007FFDCBBF01AA  mov             r8b, byte ptr [0x7ffe03c6]
+00007FFDCBBF01B2  mov             rbx, rcx                  ;0x2e853ef470
+00007FFDCBBF01B5  test            r8b, 0x1
+00007FFDCBBF01B9  jz              0x7ffdcbc66d6a
+00007FFDCBBF01BF  mov             r11, qword ptr [0x7ffe03b8]   ;0xfffffffff4706bee
+00007FFDCBBF01C7  test            r8b, 0x2
+00007FFDCBBF01CB  jz              0x7ffdcbc66d3e
+00007FFDCBBF01D1  mov             r9, qword ptr [rip+0x12adf0]  ;0x7ffe5000
+00007FFDCBBF01D8  test            r9, r9
+00007FFDCBBF01DB  jz              0x7ffdcbc66d6a
+00007FFDCBBF01E1  mov             r10d, dword ptr [r9]          ;0x1
+00007FFDCBBF01E4  test            r10d, r10d
+00007FFDCBBF01E7  jz              0x7ffdcbc66d6a
+00007FFDCBBF01ED  test            r8b, r8b
+00007FFDCBBF01F0  jns             0x7ffdcbbf0233
+;call rdtscp and build the 64 bit number
+00007FFDCBBF01F2  rdtscp          
+00007FFDCBBF01F5  shl             rdx, 0x20
+00007FFDCBBF01F9  or              rdx, rax					;0x732df0709b8f4
+
+00007FFDCBBF01FC  mov             rax, qword ptr [r9+0x8]	;0xc0c0c9022ceb0c
+00007FFDCBBF0200  mov             rcx, qword ptr [r9+0x10]	;0x0
+
+; mul rdx by implicit rax effectivly dropping the low bits
+00007FFDCBBF0204  mul             rdx						;rax: 0xa0c59e9bf32ca770 , rdx: 0x56b93138d57
+00007FFDCBBF0207  mov             eax, dword ptr [r9]		;0x1
+00007FFDCBBF020A  add             rdx, rcx					;rcx is 0, does nothing
+
+00007FFDCBBF020D  cmp             eax, r10d
+00007FFDCBBF0210  jnz             0x7ffdcbbf01e1			;this is 0, no jump
+00007FFDCBBF0212  mov             cl, byte ptr [0x7ffe03c7]
+
+00007FFDCBBF0219  add             rdx, r11					;0xfffffffff4706bee + 0x56b93138d57 = 0x56b8783f945
+00007FFDCBBF021C  shr             rdx, cl
+00007FFDCBBF021F  mov             qword ptr [rbx], rdx
+00007FFDCBBF0222  mov             rbx, qword ptr [rsp+0x30]	;0x16eeb6156f0
+00007FFDCBBF0227  mov             eax, 0x1
+00007FFDCBBF022C  add             rsp, 0x20
+00007FFDCBBF0230  pop             rdi
+00007FFDCBBF0231  ret
