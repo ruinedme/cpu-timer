@@ -1,6 +1,8 @@
+pub use macros::{profile};
 use std::{arch::x86_64::_rdtsc, mem};
 use winapi::um::profileapi::{QueryPerformanceCounter, QueryPerformanceFrequency};
 
+#[derive(Debug)]
 pub struct Timer {
     pub os_freq: u64,
     pub os_timer: u64,
@@ -61,4 +63,23 @@ pub fn cpu_freq() -> u64 {
         cpu_freq = os_freq * cpu_elapsed / os_elapsed;
     }
     return cpu_freq;
+}
+
+#[macro_export]
+macro_rules! profile_scope {
+    ($name:literal,$body: block) => {
+
+        let _name = $name;
+        let _start = cpu_timer::read_cpu_timer();
+        $body
+        let _end = cpu_timer::read_cpu_timer();
+        println!("{} took: {}", _name, _end - _start);
+    };
+    ($name:literal,$($stmt: stmt)+) => {
+        let _name = $name;
+        let _start = cpu_timer::read_cpu_timer();
+        $($stmt)+
+        let _end = cpu_timer::read_cpu_timer();
+        println!("{} took: {}", _name, _end - _start);
+    };
 }
