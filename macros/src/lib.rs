@@ -1,10 +1,13 @@
-extern  crate proc_macro;
+extern crate proc_macro;
 //use proc_macro::{TokenStream};
-use syn::{parse_macro_input, ItemFn, parse_quote};
-use quote::{quote, format_ident};
+use quote::{format_ident, quote};
+use syn::{parse_macro_input, parse_quote, ItemFn};
 
 #[proc_macro_attribute]
-pub fn profile(_attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn profile(
+    _attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
     let mut function = parse_macro_input!(item as ItemFn);
     let fn_name = function.sig.ident.to_string();
     let fn_start = format_ident!("_{}_start", fn_name);
@@ -19,7 +22,7 @@ pub fn profile(_attr: proc_macro::TokenStream, item: proc_macro::TokenStream) ->
         #body
         let #fn_end: u64 = cpu_timer::read_cpu_timer();
         println!("{} took: {}", #fn_name, #fn_end - #fn_start);
-        
+
         }
     };
 
@@ -27,5 +30,6 @@ pub fn profile(_attr: proc_macro::TokenStream, item: proc_macro::TokenStream) ->
 
     (quote! {
         #function
-    }).into()
+    })
+    .into()
 }

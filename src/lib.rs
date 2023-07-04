@@ -1,4 +1,4 @@
-pub use macros::{profile};
+pub use macros::profile;
 use std::{arch::x86_64::_rdtsc, mem};
 use winapi::um::profileapi::{QueryPerformanceCounter, QueryPerformanceFrequency};
 
@@ -42,7 +42,7 @@ pub fn read_cpu_timer() -> u64 {
 }
 
 /**
- * Give a close approximation based on the high precision timers above 
+ * Give a close approximation based on the high precision timers above
  * Uses a 100ms delay to approximate the cpu frequency
  */
 pub fn cpu_freq() -> u64 {
