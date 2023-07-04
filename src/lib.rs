@@ -65,6 +65,8 @@ pub fn cpu_freq() -> u64 {
     return cpu_freq;
 }
 
+//TODO: how can i take the total time of ALL profile_scope! macros and add them together
+//or expose them to the attribute macro to get % of total time per scoped section?
 #[macro_export]
 macro_rules! profile_scope {
     ($name:literal,$body: block) => {
