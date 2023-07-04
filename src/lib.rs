@@ -65,6 +65,12 @@ pub fn cpu_freq() -> u64 {
     return cpu_freq;
 }
 
+pub struct ProfiledBlocks {
+    pub name: &'static str,
+    pub start: u64,
+    pub end: u64,
+}
+pub static mut PROFILED_BLOCKS: Vec<ProfiledBlocks> = Vec::new();
 //TODO: how can i take the total time of ALL profile_scope! macros and add them together
 //or expose them to the attribute macro to get % of total time per scoped section?
 #[macro_export]
@@ -75,13 +81,17 @@ macro_rules! profile_scope {
         let _start = cpu_timer::read_cpu_timer();
         $body
         let _end = cpu_timer::read_cpu_timer();
-        println!("{} took: {}", _name, _end - _start);
+        unsafe {
+            cpu_timer::PROFILED_BLOCKS.push(cpu_timer::ProfiledBlocks {name: _name, start: _start, end: _end});
+        }
     };
     ($name:literal,$($stmt: stmt)+) => {
         let _name = $name;
         let _start = cpu_timer::read_cpu_timer();
         $($stmt)+
         let _end = cpu_timer::read_cpu_timer();
-        println!("{} took: {}", _name, _end - _start);
+        unsafe {
+            cpu_timer::PROFILED_BLOCKS.push(cpu_timer::ProfiledBlocks {name: _name, start: _start, end: _end});
+        }
     };
 }

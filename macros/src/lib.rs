@@ -19,9 +19,26 @@ pub fn profile(
     let new_body: syn::Block = parse_quote! {
         {
         let #fn_start: u64 = cpu_timer::read_cpu_timer();
+        unsafe {
+            cpu_timer::PROFILED_BLOCKS.push(cpu_timer::ProfiledBlocks {name: #fn_name, start: #fn_start, end: 0});
+        }
         #body
         let #fn_end: u64 = cpu_timer::read_cpu_timer();
-        println!("{} took: {}", #fn_name, #fn_end - #fn_start);
+        unsafe {
+            cpu_timer::PROFILED_BLOCKS[0].end = #fn_end;
+            let total = cpu_timer::PROFILED_BLOCKS[0].end - cpu_timer::PROFILED_BLOCKS[0].start;
+            println!("Total {}: {}", cpu_timer::PROFILED_BLOCKS[0].name, total);
+            let mut acc_total = 0;
+            for block in &cpu_timer::PROFILED_BLOCKS {
+                let block_total = block.end - block.start;
+                if block_total != total {
+                    acc_total += block_total;
+                    println!("{} took: {}, {:.4}%", block.name, block_total, (block_total as f64 / total as f64) * 100f64);
+                }
+            }
+            let diff = total.abs_diff(acc_total);
+            println!("profiled total: {} , diff: {}, {:.4}%", acc_total, diff, (acc_total as f64 / total as f64) * 100f64 );
+        }
 
         }
     };
