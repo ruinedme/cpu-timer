@@ -1,5 +1,5 @@
 pub use macros::profile;
-use std::{arch::x86_64::_rdtsc, mem};
+use std::{arch::x86_64::_rdtsc, mem, collections::BTreeMap};
 use winapi::um::profileapi::{QueryPerformanceCounter, QueryPerformanceFrequency};
 
 #[derive(Debug)]
@@ -62,36 +62,71 @@ pub fn cpu_freq() -> u64 {
     if os_elapsed > 0 {
         cpu_freq = os_freq * cpu_elapsed / os_elapsed;
     }
+
     return cpu_freq;
 }
 
-pub struct ProfiledBlocks {
-    pub name: &'static str,
-    pub start: u64,
-    pub end: u64,
+//start will be the current time of rdtsc when the macro is called
+//count will be the number of times the profiled block was called
+//elapsed will be the will be the sum of all times the block was profiled
+pub struct TimedBlock {
+    pub start: usize,
+    pub elapsed: usize,
+    pub count: usize,
 }
-pub static mut PROFILED_BLOCKS: Vec<ProfiledBlocks> = Vec::new();
-//TODO: how can i take the total time of ALL profile_scope! macros and add them together
-//or expose them to the attribute macro to get % of total time per scoped section?
+
+pub static mut TIMED_BLOCK: BTreeMap<String,TimedBlock> = BTreeMap::new();
+
 #[macro_export]
 macro_rules! profile_scope {
     ($name:literal,$body: block) => {
 
         let _name = $name;
         let _start = cpu_timer::read_cpu_timer();
-        $body
-        let _end = cpu_timer::read_cpu_timer();
         unsafe {
-            cpu_timer::PROFILED_BLOCKS.push(cpu_timer::ProfiledBlocks {name: _name, start: _start, end: _end});
+            use cpu_timer::*;
+            TIMED_BLOCK.entry(_name.to_string())
+            .and_modify(|x| {
+                let block_end = x.start;
+                x.start = read_cpu_timer() as usize;
+                x.elapsed += block_end - x.start;
+                x.count += 1;
+            })
+            .or_insert(TimedBlock { start: read_cpu_timer() as usize, elapsed: 0, count: 1 });
         }
+        $body
+        unsafe {
+            use cpu_timer::*;
+            TIMED_BLOCK.entry(_name.to_string())
+            .and_modify(|x| {
+                let block_end = read_cpu_timer() as usize;
+                x.elapsed += block_end - x.start;
+            });
+        }
+        
     };
     ($name:literal,$($stmt: stmt)+) => {
         let _name = $name;
         let _start = cpu_timer::read_cpu_timer();
-        $($stmt)+
-        let _end = cpu_timer::read_cpu_timer();
         unsafe {
-            cpu_timer::PROFILED_BLOCKS.push(cpu_timer::ProfiledBlocks {name: _name, start: _start, end: _end});
+            use cpu_timer::*;
+            TIMED_BLOCK.entry(_name.to_string())
+            .and_modify(|x| {
+                let block_end = x.start;
+                x.start = read_cpu_timer() as usize;
+                x.elapsed += block_end - x.start;
+                x.count += 1;
+            })
+            .or_insert(TimedBlock { start: read_cpu_timer() as usize, elapsed: 0, count: 1 });
+        }
+        $($stmt)+
+        unsafe {
+            use cpu_timer::*;
+            TIMED_BLOCK.entry(_name.to_string())
+            .and_modify(|x| {
+                let block_end = read_cpu_timer() as usize;
+                x.elapsed += block_end - x.start;
+            });
         }
     };
 }

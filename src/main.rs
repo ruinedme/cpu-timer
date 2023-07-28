@@ -38,7 +38,7 @@ fn main() {
         println!("OS Seconds: {:0.4}", os_elapsed as f64 / os_freq as f64);
 
         println!(
-            "CPU Timer: {} -> {} = {} elapased",
+            "CPU Timer: {} -> {} = {} elapsed",
             cpu_start, cpu_end, cpu_elapsed
         );
         println!("CPU Freq: {} (guessed)", cpu_freq);
