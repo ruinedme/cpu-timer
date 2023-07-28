@@ -24,12 +24,13 @@ pub fn profile(
         unsafe {
             use cpu_timer::*;
             let block_end = read_cpu_timer() as usize;
+            let cpu_freq = cpu_freq();
             let profile_block = TIMED_BLOCK.get_mut(#fn_name).unwrap();
             profile_block.elapsed += block_end - profile_block.start;
             
             //let total = block_end - profile_block.start;
     
-            println!("Total {}: {}", #fn_name, profile_block.elapsed);
+            println!("Total {}: {}ms", #fn_name, (profile_block.elapsed as f64 / cpu_freq as f64) * 1000f64 );
             let mut acc_total = 0;
             for block in &cpu_timer::TIMED_BLOCK {
                 if block.0 == #fn_name {
