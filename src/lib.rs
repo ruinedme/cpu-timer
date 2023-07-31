@@ -119,7 +119,6 @@ macro_rules! profile_scope {
                 x.count += 1;
             })
             .or_insert(TimedBlock { start: read_cpu_timer() as usize, elapsed: 0, count: 1 });
-            println!("starting block {}, {:?}", _name, cpu_timer::TIMED_BLOCK);
         }
         $($stmt)+
         unsafe {
