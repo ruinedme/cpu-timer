@@ -69,6 +69,7 @@ pub fn cpu_freq() -> u64 {
 //start will be the current time of rdtsc when the macro is called
 //count will be the number of times the profiled block was called
 //elapsed will be the will be the sum of all times the block was profiled
+#[derive(Debug)]
 pub struct TimedBlock {
     pub start: usize,
     pub elapsed: usize,
@@ -118,6 +119,7 @@ macro_rules! profile_scope {
                 x.count += 1;
             })
             .or_insert(TimedBlock { start: read_cpu_timer() as usize, elapsed: 0, count: 1 });
+            println!("starting block {}, {:?}", _name, cpu_timer::TIMED_BLOCK);
         }
         $($stmt)+
         unsafe {

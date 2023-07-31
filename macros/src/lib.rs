@@ -30,7 +30,7 @@ pub fn profile(
             
             //let total = block_end - profile_block.start;
     
-            println!("Total {}: {}ms", #fn_name, (profile_block.elapsed as f64 / cpu_freq as f64) * 1000f64 );
+            println!("Total {}: {:.4}ms", #fn_name, (profile_block.elapsed as f64 / cpu_freq as f64) * 1000f64 );
             let mut acc_total = 0;
             for block in &cpu_timer::TIMED_BLOCK {
                 if block.0 == #fn_name {
