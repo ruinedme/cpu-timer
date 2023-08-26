@@ -131,3 +131,32 @@ macro_rules! profile_scope {
         }
     };
 }
+
+#[macro_export]
+macro_rules! print_profile {
+    () => {
+        unsafe {            
+            use cpu_timer::*;
+            let _end_time = read_cpu_timer();
+            TIMED_BLOCK.iter_mut().filter(|x| x.1.elapsed == 0).for_each(|x| {
+                x.1.elapsed = _end_time as usize - x.1.start;
+            });
+            let profile_block = TIMED_BLOCK.get_mut("main").unwrap();
+            let cpu_freq = cpu_freq();
+            println!("Total main: {:.4}ms", (profile_block.elapsed as f64 / cpu_freq as f64) * 1000f64 );
+            let mut acc_total = 0;
+            for block in &TIMED_BLOCK {
+                if block.0 == "main" {
+                    continue;
+                }
+                acc_total += block.1.elapsed;
+                println!("{} [{}] took: {}, {:.4}%", block.0, block.1.count, block.1.elapsed, (block.1.elapsed as f64 / profile_block.elapsed as f64) * 100f64);
+            }
+            let diff = profile_block.elapsed.abs_diff(acc_total);
+            println!("profiled total: {} , diff: {}, {:.4}%", acc_total, diff, (acc_total as f64 / profile_block.elapsed as f64) * 100f64 );
+            for b in &TIMED_BLOCK {
+                println!("{:?}",b);
+            }
+        }
+    };
+}

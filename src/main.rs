@@ -1,8 +1,8 @@
-use cpu_timer::{self, profile_scope};
-use macros::profile;
+use cpu_timer::{self, profile_scope,print_profile};
+use macros::profile_zone;
 use std::env;
 
-#[profile]
+#[profile_zone]
 fn main() {
     let mut milis_to_wait = 1000u64;
     let args: Vec<String> = env::args().collect();
@@ -43,4 +43,6 @@ fn main() {
         );
         println!("CPU Freq: {} (guessed)", cpu_freq);
     });
+
+    print_profile!();
 }
