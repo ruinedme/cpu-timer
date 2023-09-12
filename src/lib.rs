@@ -4,9 +4,9 @@ use winapi::um::profileapi::{QueryPerformanceCounter, QueryPerformanceFrequency}
 
 #[derive(Debug)]
 pub struct Timer {
-    pub os_freq: u64,
-    pub os_timer: u64,
-    pub cpu_timer: u64,
+    pub os_freq: usize,
+    pub os_timer: usize,
+    pub cpu_timer: usize,
 }
 
 impl Timer {
@@ -19,25 +19,25 @@ impl Timer {
     }
 }
 
-pub fn os_freq() -> u64 {
+pub fn os_freq() -> usize {
     unsafe {
         let mut freq = mem::zeroed();
         QueryPerformanceFrequency(&mut freq);
-        return *freq.QuadPart() as u64;
+        return *freq.QuadPart() as usize;
     }
 }
 
-pub fn read_os_timer() -> u64 {
+pub fn read_os_timer() -> usize {
     unsafe {
         let mut os_timer = mem::zeroed();
         QueryPerformanceCounter(&mut os_timer);
-        return *os_timer.QuadPart() as u64;
+        return *os_timer.QuadPart() as usize;
     }
 }
 
-pub fn read_cpu_timer() -> u64 {
+pub fn read_cpu_timer() -> usize {
     unsafe {
-        return _rdtsc();
+        return _rdtsc() as usize;
     }
 }
 
@@ -45,12 +45,12 @@ pub fn read_cpu_timer() -> u64 {
  * Give a close approximation based on the high precision timers above
  * Uses a 100ms delay to approximate the cpu frequency
  */
-pub fn cpu_freq() -> u64 {
+pub fn cpu_freq() -> usize {
     let milis_to_wait = 100;
     let os_freq = os_freq();
     let cpu_start = read_cpu_timer();
     let os_start = read_os_timer();
-    let mut os_elapsed = 0u64;
+    let mut os_elapsed = 0;
     let os_wait_time = os_freq * milis_to_wait / 1000;
     while os_elapsed < os_wait_time {
         os_elapsed = read_os_timer() - os_start;
@@ -58,7 +58,7 @@ pub fn cpu_freq() -> u64 {
 
     let cpu_end = read_cpu_timer();
     let cpu_elapsed = cpu_end - cpu_start;
-    let mut cpu_freq = 0u64;
+    let mut cpu_freq = 0;
     if os_elapsed > 0 {
         cpu_freq = os_freq * cpu_elapsed / os_elapsed;
     }
@@ -77,6 +77,10 @@ pub struct TimedBlock {
 }
 
 pub static mut TIMED_BLOCK: BTreeMap<String,TimedBlock> = BTreeMap::new();
+
+pub struct ProfileAnchor {
+    tsc_elapsed: usize
+}
 
 #[macro_export]
 macro_rules! start_block {
