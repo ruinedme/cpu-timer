@@ -1,4 +1,4 @@
-use cpu_timer::{self, profile_scope,print_profile};
+use cpu_timer::{self,print_profile,start_block,end_block};
 use macros::profile_zone;
 use std::env;
 
@@ -19,30 +19,30 @@ fn main() {
     let mut os_elapsed = 0;
     let os_wait_time = os_freq * milis_to_wait / 1000;
 
-    profile_scope!("loop", {
-        while os_elapsed < os_wait_time {
-            os_end = cpu_timer::read_os_timer();
-            os_elapsed = os_end - os_start;
-        }
-    });
+    start_block!("loop");
+    while os_elapsed < os_wait_time {
+        os_end = cpu_timer::read_os_timer();
+        os_elapsed = os_end - os_start;
+    }
+    end_block!("loop");
 
-    profile_scope!("everything_else", {
-        let cpu_end = cpu_timer::read_cpu_timer();
-        let cpu_elapsed = cpu_end - cpu_start;
-        let cpu_freq = cpu_timer::cpu_freq();
+    start_block!("everything_else");
+    let cpu_end = cpu_timer::read_cpu_timer();
+    let cpu_elapsed = cpu_end - cpu_start;
+    let cpu_freq = cpu_timer::cpu_freq();
 
-        println!(
-            "OS Timer: {} -> {} = {} elapsed",
-            os_start, os_end, os_elapsed
-        );
-        println!("OS Seconds: {:0.4}", os_elapsed as f64 / os_freq as f64);
+    println!(
+        "OS Timer: {} -> {} = {} elapsed",
+        os_start, os_end, os_elapsed
+    );
+    println!("OS Seconds: {:0.4}", os_elapsed as f64 / os_freq as f64);
 
-        println!(
-            "CPU Timer: {} -> {} = {} elapsed",
-            cpu_start, cpu_end, cpu_elapsed
-        );
-        println!("CPU Freq: {} (guessed)", cpu_freq);
-    });
+    println!(
+        "CPU Timer: {} -> {} = {} elapsed",
+        cpu_start, cpu_end, cpu_elapsed
+    );
+    println!("CPU Freq: {} (guessed)", cpu_freq);
+    end_block!("everything_else");
 
     print_profile!();
 }

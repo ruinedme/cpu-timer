@@ -49,9 +49,6 @@ pub fn profile_zone (
         },
         _ => {
             let ret_stmt = stmts.pop().unwrap();
-            for s in &stmts {
-                println!("s {:?}", s);
-            }
             let new_body: syn::Block = parse_quote! {
                 {
                 #start_time_block

@@ -1,4 +1,4 @@
-pub use macros::profile;
+pub use macros::profile_zone;
 use std::{arch::x86_64::_rdtsc, mem, collections::BTreeMap};
 use winapi::um::profileapi::{QueryPerformanceCounter, QueryPerformanceFrequency};
 
@@ -79,13 +79,12 @@ pub struct TimedBlock {
 pub static mut TIMED_BLOCK: BTreeMap<String,TimedBlock> = BTreeMap::new();
 
 #[macro_export]
-macro_rules! profile_scope {
-    ($name:literal,$body: block) => {
-
-        let _name = $name;
-        let _start = cpu_timer::read_cpu_timer();
+macro_rules! start_block {
+    ($block_name:literal) => {
         unsafe {
             use cpu_timer::*;
+            let _start = cpu_timer::read_cpu_timer();
+            let _name = $block_name;
             TIMED_BLOCK.entry(_name.to_string())
             .and_modify(|x| {
                 let block_end = x.start;
@@ -95,38 +94,19 @@ macro_rules! profile_scope {
             })
             .or_insert(TimedBlock { start: read_cpu_timer() as usize, elapsed: 0, count: 1 });
         }
-        $body
-        unsafe {
-            use cpu_timer::*;
-            TIMED_BLOCK.entry(_name.to_string())
-            .and_modify(|x| {
-                let block_end = read_cpu_timer() as usize;
-                x.elapsed += block_end - x.start;
-            });
-        }
-        
     };
-    ($name:literal,$($stmt: stmt)+) => {
-        let _name = $name;
-        let _start = cpu_timer::read_cpu_timer();
+}
+
+#[macro_export]
+macro_rules! end_block {
+    ($block_name:literal) => {
         unsafe {
             use cpu_timer::*;
+            let _end = cpu_timer::read_cpu_timer() as usize;
+            let _name = $block_name;
             TIMED_BLOCK.entry(_name.to_string())
-            .and_modify(|x| {
-                let block_end = x.start;
-                x.start = read_cpu_timer() as usize;
-                x.elapsed += block_end - x.start;
-                x.count += 1;
-            })
-            .or_insert(TimedBlock { start: read_cpu_timer() as usize, elapsed: 0, count: 1 });
-        }
-        $($stmt)+
-        unsafe {
-            use cpu_timer::*;
-            TIMED_BLOCK.entry(_name.to_string())
-            .and_modify(|x| {
-                let block_end = read_cpu_timer() as usize;
-                x.elapsed += block_end - x.start;
+            .and_modify(|x| {                
+                x.elapsed += _end - x.start;
             });
         }
     };
