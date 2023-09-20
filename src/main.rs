@@ -1,8 +1,8 @@
-use cpu_timer::{self,print_profile,start_block,end_block};
+use cpu_timer::{end_block, print_profile, read_cpu_timer, start_block};
 use macros::profile_zone;
 use std::env;
 
-#[profile_zone]
+#[profile_zone(init = true)]
 fn main() {
     let mut milis_to_wait = 1000;
     let args: Vec<String> = env::args().collect();
@@ -13,7 +13,7 @@ fn main() {
     let os_freq = cpu_timer::os_freq();
     println!("OS Freq: {os_freq}");
 
-    let cpu_start = cpu_timer::read_cpu_timer();
+    let cpu_start = read_cpu_timer();
     let os_start = cpu_timer::read_os_timer();
     let mut os_end = 0;
     let mut os_elapsed = 0;
@@ -27,7 +27,7 @@ fn main() {
     end_block!("loop");
 
     start_block!("everything_else");
-    let cpu_end = cpu_timer::read_cpu_timer();
+    let cpu_end = read_cpu_timer();
     let cpu_elapsed = cpu_end - cpu_start;
     let cpu_freq = cpu_timer::cpu_freq();
 
@@ -44,5 +44,6 @@ fn main() {
     println!("CPU Freq: {} (guessed)", cpu_freq);
     end_block!("everything_else");
 
+    end_block!("main");
     print_profile!();
 }

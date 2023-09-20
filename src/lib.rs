@@ -1,5 +1,5 @@
 pub use macros::profile_zone;
-use std::{arch::x86_64::_rdtsc, mem, collections::BTreeMap};
+use std::{arch::x86_64::_rdtsc, collections::BTreeMap, mem};
 use winapi::um::profileapi::{QueryPerformanceCounter, QueryPerformanceFrequency};
 
 #[derive(Debug)]
@@ -66,37 +66,45 @@ pub fn cpu_freq() -> usize {
     return cpu_freq;
 }
 
-//start will be the current time of rdtsc when the macro is called
-//count will be the number of times the profiled block was called
-//elapsed will be the will be the sum of all times the block was profiled
 #[derive(Debug)]
-pub struct TimedBlock {
-    pub start: usize,
-    pub elapsed: usize,
-    pub count: usize,
-}
-
-pub static mut TIMED_BLOCK: BTreeMap<String,TimedBlock> = BTreeMap::new();
-
 pub struct ProfileAnchor {
-    tsc_elapsed: usize
+    pub start_tsc: usize,
+    pub tsc_elapsed: usize,
+    pub hit_count: usize,
 }
+
+#[derive(Debug)]
+pub struct Profiler {
+    pub start_tsc: usize,
+    pub end_tsc: usize,
+    pub anchors: BTreeMap<String, ProfileAnchor>,
+}
+
+pub static mut PROFILER: Profiler = Profiler {
+    start_tsc: 0,
+    end_tsc: 0,
+    anchors: BTreeMap::new(),
+};
 
 #[macro_export]
 macro_rules! start_block {
     ($block_name:literal) => {
         unsafe {
-            use cpu_timer::*;
-            let _start = cpu_timer::read_cpu_timer();
+            use cpu_timer::{read_cpu_timer, ProfileAnchor, PROFILER};
+            let _start = read_cpu_timer();
             let _name = $block_name;
-            TIMED_BLOCK.entry(_name.to_string())
-            .and_modify(|x| {
-                let block_end = x.start;
-                x.start = read_cpu_timer() as usize;
-                x.elapsed += block_end - x.start;
-                x.count += 1;
-            })
-            .or_insert(TimedBlock { start: read_cpu_timer() as usize, elapsed: 0, count: 1 });
+            PROFILER
+                .anchors
+                .entry(_name.to_string())
+                .and_modify(|x| {
+                    x.tsc_elapsed += read_cpu_timer() - x.start_tsc;
+                    x.hit_count += 1;
+                })
+                .or_insert(ProfileAnchor {
+                    start_tsc: read_cpu_timer(),
+                    tsc_elapsed: 0,
+                    hit_count: 1,
+                });
         }
     };
 }
@@ -105,12 +113,10 @@ macro_rules! start_block {
 macro_rules! end_block {
     ($block_name:literal) => {
         unsafe {
-            use cpu_timer::*;
-            let _end = cpu_timer::read_cpu_timer() as usize;
+            use cpu_timer::{read_cpu_timer, ProfileAnchor, PROFILER};
             let _name = $block_name;
-            TIMED_BLOCK.entry(_name.to_string())
-            .and_modify(|x| {                
-                x.elapsed += _end - x.start;
+            PROFILER.anchors.entry(_name.to_string()).and_modify(|x| {
+                x.tsc_elapsed += read_cpu_timer() - x.start_tsc;
             });
         }
     };
@@ -119,27 +125,27 @@ macro_rules! end_block {
 #[macro_export]
 macro_rules! print_profile {
     () => {
-        unsafe {            
-            use cpu_timer::*;
-            let _end_time = read_cpu_timer();
-            TIMED_BLOCK.iter_mut().filter(|x| x.1.elapsed == 0).for_each(|x| {
-                x.1.elapsed = _end_time as usize - x.1.start;
-            });
-            let profile_block = TIMED_BLOCK.get_mut("main").unwrap();
+        unsafe {
+            use cpu_timer::{cpu_freq, read_cpu_timer, ProfileAnchor, PROFILER};
+            PROFILER.end_tsc = read_cpu_timer();
             let cpu_freq = cpu_freq();
-            println!("Total main: {:.4}ms", (profile_block.elapsed as f64 / cpu_freq as f64) * 1000f64 );
-            let mut acc_total = 0;
-            for block in &TIMED_BLOCK {
-                if block.0 == "main" {
-                    continue;
-                }
-                acc_total += block.1.elapsed;
-                println!("{} [{}] took: {}, {:.4}%", block.0, block.1.count, block.1.elapsed, (block.1.elapsed as f64 / profile_block.elapsed as f64) * 100f64);
-            }
-            let diff = profile_block.elapsed.abs_diff(acc_total);
-            println!("profiled total: {} , diff: {}, {:.4}%", acc_total, diff, (acc_total as f64 / profile_block.elapsed as f64) * 100f64 );
-            for b in &TIMED_BLOCK {
-                println!("{:?}",b);
+
+            let total_cpu_elapsed = PROFILER.end_tsc - PROFILER.start_tsc;
+
+            println!(
+                "Total Time: {:.4}ms (CPU freq {})",
+                1000f64 * total_cpu_elapsed as f64 / cpu_freq as f64,
+                cpu_freq
+            );
+
+            for (name, anchor) in &PROFILER.anchors {
+                println!(
+                    "{} [{}] took: {}, {:.2}%",
+                    name,
+                    anchor.hit_count,
+                    anchor.tsc_elapsed,
+                    (anchor.tsc_elapsed as f64 / total_cpu_elapsed as f64) * 100f64
+                );
             }
         }
     };
